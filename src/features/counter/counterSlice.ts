@@ -1,4 +1,4 @@
-import { Map, Record } from "immutable"
+import { List, Map, Record } from "immutable"
 import { createAsyncThunk, createSlice, PayloadAction } from "@reduxjs/toolkit"
 import { RootState, AppThunk } from "../../app/store"
 import { fetchCount } from "./counterAPI"
@@ -6,11 +6,14 @@ import { fetchCount } from "./counterAPI"
 type OldState = {
   value: number
   state: "idle" | "loading" | "failed"
+  // adding a "list" here will throw TS errors
+  list: List<number>
 }
 
 class ImmutableInnerState extends Record<OldState>({
   value: 0,
   state: "idle",
+  list: List<number>(),
 }) {}
 
 export interface CounterState {
@@ -45,7 +48,9 @@ export const counterSlice = createSlice({
       // doesn't actually mutate the state because it uses the Immer library,
       // which detects changes to a "draft state" and produces a brand new
       // immutable state based off those changes
-      state.immutable = state.immutable.update("value", (value) => value + 1)
+      state.immutable = state.immutable
+        .update("value", (value) => value + 1)
+        .update("list", (l) => l.push(l.size + 1))
     },
     decrement: (state) => {
       state.immutable = state.immutable.set(
@@ -85,7 +90,7 @@ export const { increment, decrement, incrementByAmount } = counterSlice.actions
 // the state. Selectors can also be defined inline where they're used instead of
 // in the slice file. For example: `useSelector((state: RootState) => state.counter.value)`
 export const selectCount = (state: RootState) =>
-  state.counter.immutable.getIn(["value"])
+  state.counter.immutable.get("list").size
 
 // We can also write thunks by hand, which may contain both sync and async logic.
 // Here's an example of conditionally dispatching actions based on current state.
